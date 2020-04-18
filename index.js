@@ -26,10 +26,7 @@ function init() {
             height: 5,
             curveSegments: 12
         });
-        var materials = [
-            new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, overdraw: 0.5 } ),
-            new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
-        ];
+        var materials = new THREE.MeshPhongMaterial({color: 0xFF0000});
         var textMesh = new THREE.Mesh(textGeometry, materials);
         scene.add(textMesh);
     } );
