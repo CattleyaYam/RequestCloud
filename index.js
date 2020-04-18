@@ -17,22 +17,6 @@ function init() {
  
     mesh = new THREE.Mesh( geometry, material );
     scene.add( mesh );
-
-    var loader = new THREE.FontLoader();
-    loader.load('fonts/helvetiker_regular.typeface.json', function ( font ) {
-        var textGeometry = new THREE.TextGeometry("Hello Three.js!", {
-            font: font,
-            size: 20,
-            height: 5,
-            curveSegments: 12
-        });
-        var materials = [
-            new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, overdraw: 0.5 } ),
-            new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } )
-        ];
-        var textMesh = new THREE.Mesh(textGeometry, materials);
-        scene.add(textMesh);
-    } );
  
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setSize( window.innerWidth-20, window.innerHeight-25);
