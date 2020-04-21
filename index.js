@@ -1,102 +1,115 @@
 var camera, scene, renderer;
 var controls;
-var objects = [];
+var bubbles = [];
 var clock;
 
-var d0 = 60;
-var d1 = d0*1.4;
-var k0 = 72/(d0*d0);
-var m = 1;
-var forceCoefficient = 10000;
-
 var circleCenterPos = new THREE.Vector2(2600,6700);
-var circleRadius = 100; //1100
+var circleRadius = 1100;
+var mass = 1;
+var viscosity = 0.001016;
+var springConst = (viscosity*viscosity) / (4*mass*0.707*0.707);
+var r = 30;
+var d0 = r*2;
+var d1 = d0 * 1.4;
+var offset = 100000000000000;
 
-//タイトル、投稿回数、currentP,currentV,currentF,half_nextV
-var table = [
-    ["命に嫌われている",120,new THREE.Vector2(0,10),new THREE.Vector2(),new THREE.Vector2()],
-    ["シャルル",160,new THREE.Vector2(0,0),new THREE.Vector2(),new THREE.Vector2()],
-    ["シャルル",160,new THREE.Vector2(1,0),new THREE.Vector2(),new THREE.Vector2()],
-    ["シャルル",160,new THREE.Vector2(0,2),new THREE.Vector2(),new THREE.Vector2()],
-    ["シャルル",160,new THREE.Vector2(0,0),new THREE.Vector2(),new THREE.Vector2()],
-    ["シャルル",160,new THREE.Vector2(-2,0),new THREE.Vector2(),new THREE.Vector2()],
-    ["シャルル",160,new THREE.Vector2(0,0),new THREE.Vector2(),new THREE.Vector2()],
-];
+class Bubble {
+    constructor(text, count, position, velocity) {
+        //parameter
+        this.count = count;
+        this.position = position;
+        this.velocity = velocity;
 
+        //css3dobject
+        this.element = document.createElement('div');
+        var rand = Math.random();
+        if(rand <=0.333) {
+            this.element.className = "bubbleBaseYellow";
+        }else if(rand<=0.6666){
+            this.element.className = "bubbleBaseMagenta";
+        }else{
+            this.element.className = "bubbleBaseCyan";
+        }
+        this.textElement = document.createElement('div');
+        this.textElement.className = "text";
+        this.textElement.innerText = text;
+        this.textElement.style.fontSize = "1px";
+        this.element.appendChild(this.textElement);
+        this.css3dobject = new THREE.CSS3DObject( this.element );
+        this.css3dobject.position.x = position.x;
+        this.css3dobject.position.y = position.y;
+        this.css3dobject.position.z = 10;
+    }
+
+    getCSS3DObject() {
+        return this.css3dobject;
+    }
+
+    getPosition(){
+        return this.position;
+    }
+
+    getVelocity(){
+        return this.velocity;
+    }
+
+    setPosition(position) {
+        this.css3dobject.position.x = position.x;
+        this.css3dobject.position.y = position.y;
+        this.position.x = position.x;
+        this.position.y = position.y;
+    }
+
+    setVelosity(velocity){
+        this.velocity.x = velocity.x;
+        this.velocity.x = velocity.y;
+    }
+}
 
 init();
 animate();
 onWindowResize();
  
 function init() {
-    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 45000 );
+    camera = new THREE.PerspectiveCamera( 45, document.documentElement.clientWidth / document.documentElement.clientHeight, 1, 45000 );
     camera.position.z = 35000;
- 
     scene = new THREE.Scene();
-
     clock = new THREE.Clock();
-    
-    //bubbles
-    for ( var i = 0; i < table.length; i ++ ) {
-        var element = document.createElement( 'div' );
-        element.className = "element";
-        element.style.width = d0+"px";
-        element.style.height = d0+"px";
-        element.style.fontSize = "1px";
-        
-        var rand = Math.random();
-        if(rand <=0.333) {
-            element.style.backgroundColor = 'rgba(255,255,0,0.5)';
-        }else if(rand<=0.6666){
-            element.style.backgroundColor = 'rgba(255,0,127,0.5)';
-        }else{
-            element.style.backgroundColor = 'rgba(0,255,255,0.5)';
-        }
+    renderer = new THREE.CSS3DRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight);
+    document.body.appendChild( renderer.domElement );
+    controls = new THREE.TrackballControls( camera, renderer.domElement );
+    controls.minDistance = 1;
+    controls.maxDistance = 45000;
+    controls.noRotate = true;
+    controls.addEventListener( 'change', render );
+    window.addEventListener( 'resize', onWindowResize, false );
+    renderer.domElement.addEventListener( 'mousedown', onMouseDown);
 
-        var text = document.createElement( 'div' );
-        text.className = "text";
-        text.innerText = table[i][0];
-        element.appendChild(text);
-
-        var object = new THREE.CSS3DObject( element );
-        table[i][2].x = circleCenterPos.x;
-        table[i][2].y = circleCenterPos.y;
-        object.position.x = table[i][2].x;
-        object.position.y = table[i][2].y;
-        object.position.z = 100;
-
-        scene.add( object );
-        objects.push( object );
+    //Bubble
+    for(var i=0; i<50; i++) {
+        var bubble = new Bubble("TEST", 1, new THREE.Vector2(),new THREE.Vector2());
+        var bubblePos = new THREE.Vector2( circleCenterPos.x+(Math.random()*100-50), circleCenterPos.y+(Math.random()*100-50) );
+        bubble.setPosition(bubblePos);
+        scene.add(bubble.getCSS3DObject());
+        bubbles.push(bubble);
     }
 
-    //background-image
+    //Background-image
     var imgElement = document.createElement( 'div' );
     imgElement.className = "imgElement";
     var circleElement = document.createElement( 'div' );
-    circleElement.className = "circleElement";
+    circleElement.className = "circle";
     imgElement.appendChild(circleElement);
     var imgObject = new THREE.CSS3DObject(imgElement);
     imgObject.position.z = -1;
     imgObject.scale.x = 20;
     imgObject.scale.y = 20;
     scene.add(imgObject);
-
-    renderer = new THREE.CSS3DRenderer();
-    renderer.setSize( window.innerWidth-20, window.innerHeight-25);
-    document.body.appendChild( renderer.domElement );
-
-    controls = new THREE.TrackballControls( camera, renderer.domElement );
-    controls.minDistance = 1;
-    controls.maxDistance = 45000;
-    controls.noRotate = true;
-    controls.addEventListener( 'change', render );
- 
-    window.addEventListener( 'resize', onWindowResize, false );
 }
  
 function animate() {
     requestAnimationFrame( animate );
-    render();
     camera.updateProjectionMatrix();
     controls.update();
     updateBubbles();
@@ -107,19 +120,26 @@ function render() {
 }
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = document.documentElement.clientWidth / document.documentElement.clientHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth-20, window.innerHeight-25 );
+    renderer.setSize( document.documentElement.clientWidth, document.documentElement.clientHeight );
     render();
 }
 
-//d：２円間の距離
-//d0：2円間安定距離（２円の半径の合計）
-//d1：2円間の力の距離範囲（bi半径（基準）＋bj直径）
-//k0=72/(d0*d0)
-function calcBetweenBubbleForce(d, d0, d1, k0) {
+function onMouseDown() {
+    for(var i=0; i<10; i++) {
+        var bubble = new Bubble("TEST", 1, new THREE.Vector2(),new THREE.Vector2());
+        var bubblePos = new THREE.Vector2( circleCenterPos.x+(Math.random()*100-50), circleCenterPos.y+(Math.random()*100-50) );
+        bubble.setPosition(bubblePos);
+        scene.add(bubble.getCSS3DObject());
+        bubbles.push(bubble);
+        console.log("test");
+    }
+}
+
+function calcBetweenBubbleForce( d ) {
     if(d>=0 && d<=d1) {
-        var D = k0 * ( (d0*d0*d0-3*d0*d1*d1+2*d1*d1*d1) / (d0*(d1*d1*d1-d0*d1*d1)) )
+        var D = springConst * ( (d0*d0*d0-3*d0*d1*d1+2*d1*d1*d1) / (d0*(d1*d1*d1-d0*d1*d1)) )
         var C = 0;
         var B = D * ( (d0*d0*d0-d1*d1*d1) / (d0*d0*(d1*d1*d1-d0*d1*d1)) );
         var A = D * ( (d1*d1-d0*d0) / (d0*d0*(d1*d1*d1-d0*d1*d1)) );
@@ -129,71 +149,59 @@ function calcBetweenBubbleForce(d, d0, d1, k0) {
     }
 }
 
-
 function updateBubbles() {
-    var delta = clock.getDelta();
+    var dt = clock.getDelta()*0.1;
 
-    for ( var i = 0; i < table.length; i++ ) {
+    for(var i=0; i<bubbles.length; i++) {
         
-        //力計算
+        //合力
+        var currentPi = bubbles[i].getPosition();
         var currentF = new THREE.Vector2();
-        for ( var j = 0; j < table.length; j++ ) {
-            var currentPi = table[i][2];
+        for ( var j = 0; j < bubbles.length; j++ ) {
             if(i!=j) {
-                var currentPj = table[j][2];
+                var currentPj = bubbles[j].getPosition();
                 var jtoi = new THREE.Vector2(currentPi.x-currentPj.x, currentPi.y-currentPj.y);
                 var d = jtoi.length();
                 jtoi.normalize();
-                var forceMagni = calcBetweenBubbleForce(d,d0,d1,k0)*forceCoefficient;
+                var forceMagni = calcBetweenBubbleForce(d)*offset;
                 jtoi.multiplyScalar(forceMagni);
                 currentF.x += jtoi.x;
                 currentF.y += jtoi.y;
             }
         }
-
+        
         //速度の更新１
-        //var viscosityCoefficient = 0.707*2*Math.pow(-m*currentF.length()/(d0/2),0.5); //半径が異なる場合は、(d0/2)の部分を変える必要あり
-        var viscosityCoefficient = 0.707;
-        var currentV = table[i][3];
+        var currentV = bubbles[i].getVelocity();
         var half_nextV = new THREE.Vector2(
-            currentV.x*(2*m-delta*viscosityCoefficient)/(2*m+delta*viscosityCoefficient) + currentF.x*(delta/(2*m+delta*viscosityCoefficient)),
-            currentV.y*(2*m-delta*viscosityCoefficient)/(2*m+delta*viscosityCoefficient) + currentF.y*(delta/(2*m+delta*viscosityCoefficient))
+            currentV.x*(2*mass-dt*viscosity)/(2*mass+dt*viscosity) + currentF.x*(dt/(2*mass+dt*viscosity)),
+            currentV.y*(2*mass-dt*viscosity)/(2*mass+dt*viscosity) + currentF.y*(dt/(2*mass+dt*viscosity))
         );
 
         //位置の更新
-        var currentP = table[i][2];
         var nextP = new THREE.Vector2(
-            currentP.x + half_nextV.x * (delta*(2*m+delta*viscosityCoefficient)) / (2*m),
-            currentP.y + half_nextV.y * (delta*(2*m+delta*viscosityCoefficient)) / (2*m)
+            currentPi.x + half_nextV.x * (dt*(2*mass+dt*viscosity)) / (2*mass),
+            currentPi.y + half_nextV.y * (dt*(2*mass+dt*viscosity)) / (2*mass)
         );
-        //console.log(nextP);
 
         //力の更新
         var nextF = new THREE.Vector2();
-        for ( var j = 0; j < table.length; j++ ) {
+        for (var j = 0; j < bubbles.length; j++ ) {
             if(i!=j) {
-                var currentPj = table[j][2];
+                var currentPj = bubbles[j].getPosition();
                 var jtoi = new THREE.Vector2(nextP.x-currentPj.x, nextP.y-currentPj.y);
                 var d = jtoi.length();
                 jtoi.normalize();
-                var forceMagni = calcBetweenBubbleForce(d,d0,d1,k0)*forceCoefficient;
+                var forceMagni = calcBetweenBubbleForce(d)*offset;
                 jtoi.multiplyScalar(forceMagni);
                 nextF.x += jtoi.x;
                 nextF.y += jtoi.y;
-
-                if(d<=0.00001){
-                    var tmp = new THREE.Vector2(2*Math.random()-1, 2*Math.random()-1);
-                    tmp.normalize();
-                    nextF.x += tmp.x*0.00001;
-                    nextF.y += tmp.y*0.00001;
-                }
             }
         }
 
         //速度の更新２
         var nextV = new THREE.Vector2(
-            half_nextV.x + nextF.x * (delta/(2*m+delta*viscosityCoefficient)),
-            half_nextV.y + nextF.y * (delta/(2*m+delta*viscosityCoefficient))
+            half_nextV.x + nextF.x * (dt/(2*mass+dt*viscosity)),
+            half_nextV.y + nextF.y * (dt/(2*mass+dt*viscosity))
         );
 
         //一定範囲に収まるように位置と速度を修正
@@ -212,13 +220,8 @@ function updateBubbles() {
             nextP.y = circleCenterPos.y+centerToNextP.y;
         }
 
-        table[i][2].x = nextP.x;
-        table[i][2].y = nextP.y;
-        table[i][3].x = nextV.x;
-        table[i][3].y = nextV.y;
-        table[i][4].x = nextF.x;
-        table[i][4].y = nextF.y;
-        objects[i].position.x = nextP.x;
-        objects[i].position.y = nextP.y;
+        bubbles[i].setPosition( nextP );
+        bubbles[i].setVelosity( nextV );
+
     }
 }
