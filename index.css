@@ -1,0 +1,38 @@
+.element {
+    border-radius: 50%;
+}
+.element .text {
+    position: absolute;
+    vertical-align: middle;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    line-height: 100%;
+    font-size:1px;
+}
+
+.imgElement{
+    width: 850px;
+    height: 1200px;
+    background-image: url(images/aoi.png);
+    background-repeat: no-repeat;
+}
+
+.circleElement{
+    position: absolute;
+    left:490px;
+    top:200px;
+    border-radius: 50%;
+    width: 130px;
+    height: 130px;
+    background: radial-gradient(
+        ellipse farthest-side,
+        rgba(255,255,255,1) 0px,
+        rgba(255,255,255,1) 45px,
+        rgba(255,255,255,0.8) 55px,
+        rgba(255,255,255,0.6) 60px,
+        rgba(255,255,255) 65px
+    );
+}
